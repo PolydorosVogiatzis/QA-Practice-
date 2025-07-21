@@ -99,9 +99,9 @@ class TestLoginAndDashboardNavigation:
                 WebDriverWait(driver, 5).until_not(
                     EC.presence_of_element_located((by_type, locator_value))
                 )
-                print(f"✅ Loading indicator disappeared: {locator_value}")
+                print(f" Loading indicator disappeared: {locator_value}")
             except TimeoutException:
-                print(f"ℹ️ No active loading indicator found or it disappeared quickly for: {locator_value}")
+                print(f" No active loading indicator found or it disappeared quickly for: {locator_value}")
             except Exception as e:
                 print(f" Error while checking for loading indicator {locator_value}: {e}")
 
