@@ -6,11 +6,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
 from selenium.webdriver.chrome.options import Options
-from dotenv import load_dotenv
 import os
 import time
 
-load_dotenv()
 EMAIL = os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
 
@@ -23,7 +21,7 @@ MICROSOFT_LOGIN_URL_PART_2 = "login.live.com"
 def driver_setup(request):
     chrome_options = Options()
     chrome_options.add_argument('--disable-notifications')
-    
+
     driver = webdriver.Chrome(options=chrome_options)
     driver.maximize_window()
     wait = WebDriverWait(driver, 20)
@@ -39,7 +37,7 @@ class TestLoginAndDashboardNavigation:
     driver = None
     wait = None
 
-    def _login_to_microsoft(self):
+    def test_login_to_microsoft(self):
         driver = self.driver
         wait = self.wait
 
@@ -62,7 +60,7 @@ class TestLoginAndDashboardNavigation:
         wait.until(EC.url_contains(MICROSOFT_LOGIN_URL_PART_1) or EC.url_contains(MICROSOFT_LOGIN_URL_PART_2))
         assert MICROSOFT_LOGIN_URL_PART_1 in driver.current_url or MICROSOFT_LOGIN_URL_PART_2 in driver.current_url, \
             "Assertion Failed: Did not navigate to Microsoft login page."
-        
+
         print("Waiting for email field on Microsoft page...")
         email_field = wait.until(EC.visibility_of_element_located((By.NAME, "loginfmt")))
         assert email_field.is_displayed() and email_field.is_enabled(), "Assertion Failed: Email field not visible/enabled."
@@ -86,12 +84,12 @@ class TestLoginAndDashboardNavigation:
         try:
             wait.until_not(EC.url_contains(MICROSOFT_LOGIN_URL_PART_1), "Microsoft URL not left within timeout.")
         except TimeoutException:
-            print(f"ℹ️ Did not explicitly see URL change from {MICROSOFT_LOGIN_URL_PART_1}, but might have redirected quickly. Verifying current URL.")
+            print(
+                f" Did not explicitly see URL change from {MICROSOFT_LOGIN_URL_PART_1}, but might have redirected quickly. Verifying current URL.")
         assert MICROSOFT_LOGIN_URL_PART_1 not in driver.current_url and MICROSOFT_LOGIN_URL_PART_2 not in driver.current_url, \
             "Assertion Failed: Still on Microsoft login page after sign-in, authentication likely failed."
 
-
-    def _handle_stay_signed_in_prompt(self):
+    def test_handle_stay_signed_in_prompt(self):
         driver = self.driver
         wait = self.wait
 
@@ -106,7 +104,8 @@ class TestLoginAndDashboardNavigation:
             if "Keep you signed in?" in driver.page_source or "Stay signed in?" in driver.page_source:
                 stay_signed_in_yes_btn.click()
                 print(" Clicked 'Yes' on 'Stay signed in?' prompt.")
-                wait.until(EC.staleness_of(stay_signed_in_yes_btn) or EC.invisibility_of_element_located((By.ID, "idSIButton9")))
+                wait.until(EC.staleness_of(stay_signed_in_yes_btn) or EC.invisibility_of_element_located(
+                    (By.ID, "idSIButton9")))
                 assert not self._is_element_present(By.ID, "idSIButton9"), \
                     "Assertion Failed: 'Stay signed in?' prompt did not disappear after clicking Yes."
             else:
@@ -120,12 +119,12 @@ class TestLoginAndDashboardNavigation:
             print(f"An unexpected error occurred while handling 'Stay signed in?' prompt: {e}")
             pytest.fail(f"Unhandled exception during 'Stay signed in?' prompt: {e}")
 
-    def _wait_for_dashboard_load(self):
+    def test_wait_for_dashboard_load(self):
         driver = self.driver
         wait = self.wait
 
         print("Verifying successful login and preparing to click Dashboards...")
-        
+
         loading_indicators = [
             (By.CSS_SELECTOR, ".spinner-overlay"),
             (By.CSS_SELECTOR, ".loading-indicator"),
@@ -133,18 +132,18 @@ class TestLoginAndDashboardNavigation:
             (By.XPATH, "//*[contains(@class, 'loading') and contains(@style, 'display: block')]"),
             (By.XPATH, "//*[contains(@class, 'overlay') and contains(@style, 'display: block')]"),
         ]
-        
+
         for by_type, locator_value in loading_indicators:
             try:
                 print(f"Checking for loading indicator: {locator_value}")
                 WebDriverWait(driver, 5).until_not(
                     EC.presence_of_element_located((by_type, locator_value))
                 )
-                print(f"✅ Loading indicator disappeared: {locator_value}")
+                print(f" Loading indicator disappeared: {locator_value}")
                 assert not self._is_element_present(by_type, locator_value, timeout=2), \
                     f"Assertion Failed: Loading indicator {locator_value} is still present after wait."
             except TimeoutException:
-                print(f"ℹ️ No active loading indicator found or it disappeared quickly for: {locator_value}")
+                print(f" No active loading indicator found or it disappeared quickly for: {locator_value}")
             except Exception as e:
                 print(f" Error while checking for loading indicator {locator_value}: {e}")
 
@@ -162,13 +161,12 @@ class TestLoginAndDashboardNavigation:
         print(" Successfully logged in and dashboard area elements are present.")
         assert DASHBOARD_URL_PART in driver.current_url or \
                self._is_element_present(By.XPATH, "//span[normalize-space()='Dashboards']"), \
-               "Assertion Failed: Not logged in or Dashboards element not found after initial load. Check URL or element presence."
+            "Assertion Failed: Not logged in or Dashboards element not found after initial load. Check URL or element presence."
 
-
-    def _click_dashboards_link(self):
+    def test_click_dashboards_link(self):
         driver = self.driver
         wait = self.wait
-        
+
         print("Attempting to click 'Dashboards' link using By.XPATH, \"//span[normalize-space()='Dashboards']\"...")
         dashboards_element = None
         try:
@@ -215,7 +213,7 @@ class TestLoginAndDashboardNavigation:
         assert DASHBOARD_URL_PART in driver.current_url, \
             "Assertion Failed: Did not navigate to the Dashboards URL after clicking."
 
-    def _is_element_present(self, by_type, locator_value, timeout=0):
+    def test_is_element_present(self, by_type, locator_value, timeout=0):
         try:
             WebDriverWait(self.driver, timeout).until(EC.presence_of_element_located((by_type, locator_value)))
             return True
@@ -223,7 +221,7 @@ class TestLoginAndDashboardNavigation:
             return False
 
     def test_01_successful_login_and_dashboard_click(self):
-        self._login_to_microsoft()
-        self._handle_stay_signed_in_prompt()
-        self._wait_for_dashboard_load()
-        self._click_dashboards_link()
+        self.test_login_to_microsoft()
+        self.test_handle_stay_signed_in_prompt()
+        self.test_wait_for_dashboard_load()
+        self.test_click_dashboards_link()
